@@ -1,14 +1,25 @@
 package com.example.demoapi.order;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.Objects;
 
+@Document("orders")
 class Order {
-    private Long id;
-    private String description;
-    private Status status;
 
-    public Order(Long id, String description, Status status) {
+    @Id
+    private Long id;
+    private Status status;
+    private String description;
+
+    public Order(Long id, Status status, String description) {
         this.id = id;
+        this.status = status;
+        this.description = description;
+    }
+
+    public Order(String description, Status status) {
         this.description = description;
         this.status = status;
     }
@@ -28,10 +39,32 @@ class Order {
 
     @Override
     public String toString() {
-        return "Order{" +
-                "id=" + id +
-                ", description='" + description + '\'' +
-                ", status=" + status +
-                '}';
+        return String.format(
+                "Order[id=%s, status=%s, description=%s]",
+                id, status, description);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
