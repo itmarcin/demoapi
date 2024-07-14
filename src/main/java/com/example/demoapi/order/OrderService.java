@@ -1,12 +1,9 @@
 package com.example.demoapi.order;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -18,5 +15,32 @@ class OrderService {
         this.orderRepository = orderRepository;
     }
 
+    Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+    }
+
+    List<Order> getOrders() {
+        return orderRepository.findAll();
+    }
+
+    Order saveOrder(Order order) {
+        return orderRepository.save(order);
+    }
+
+    Order updateOrder(Order newOrder, Long id) {
+        return orderRepository.findById(id)
+                .map(order -> {
+                    order.setDescription(newOrder.getDescription());
+                    order.setStatus(newOrder.getStatus());
+                    return orderRepository.save(order);
+                }).orElseGet(() -> {
+                    return orderRepository.save(newOrder);
+                });
+    }
+
+    public void removeOrder(Long id) {
+        orderRepository.deleteById(id);
+    }
 }
 

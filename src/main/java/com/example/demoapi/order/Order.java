@@ -13,6 +13,9 @@ class Order {
     private Status status;
     private String description;
 
+    public Order() {
+    }
+
     public Order(Long id, Status status, String description) {
         this.id = id;
         this.status = status;
