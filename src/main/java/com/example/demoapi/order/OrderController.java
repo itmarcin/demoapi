@@ -5,6 +5,7 @@ import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,17 +34,18 @@ class OrderController {
     }
 
     @PostMapping
-    Order postOrder(@RequestBody Order order) {
+    ResponseEntity<?> postOrder(@RequestBody Order order) {
         return orderService.saveOrder(order);
     }
 
     @PutMapping("/{id}")
-    Order putOrder(@RequestBody Order order, @PathVariable Long id) {
+    ResponseEntity<?> putOrder(@RequestBody Order order, @PathVariable Long id) {
         return orderService.updateOrder(order, id);
     }
 
     @DeleteMapping("/{id}")
-    void deleteOrder(@PathVariable Long id) {
+    ResponseEntity<?> deleteOrder(@PathVariable Long id) {
         orderService.removeOrder(id);
+        return ResponseEntity.noContent().build();
     }
 }

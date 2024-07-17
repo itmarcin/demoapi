@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.aggregation.BooleanOperators;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -32,12 +34,13 @@ class OrderService {
         return orderEntityModelAssembler.toCollectionModel(orders);
     }
 
-    Order saveOrder(Order order) {
-        return orderRepository.save(order);
+    ResponseEntity<?> saveOrder(Order order) {
+        EntityModel<Order> entityModel = orderEntityModelAssembler.toModel(orderRepository.save(order));
+        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
     }
 
-    Order updateOrder(Order newOrder, Long id) {
-        return orderRepository.findById(id)
+    ResponseEntity<?> updateOrder(Order newOrder, Long id) {
+        Order updatedOrder = orderRepository.findById(id)
                 .map(order -> {
                     order.setDescription(newOrder.getDescription());
                     order.setStatus(newOrder.getStatus());
@@ -45,6 +48,9 @@ class OrderService {
                 }).orElseGet(() -> {
                     return orderRepository.save(newOrder);
                 });
+
+        EntityModel<Order> entityModel = orderEntityModelAssembler.toModel(updatedOrder);
+        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
     }
 
     public void removeOrder(Long id) {
