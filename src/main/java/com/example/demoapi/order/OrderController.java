@@ -45,7 +45,16 @@ class OrderController {
 
     @DeleteMapping("/{id}")
     ResponseEntity<?> deleteOrder(@PathVariable Long id) {
-        orderService.removeOrder(id);
-        return ResponseEntity.noContent().build();
+        return orderService.removeOrder(id);
+    }
+
+    @DeleteMapping("/{id}/cancel")
+    ResponseEntity<?> cancelOrder(@PathVariable Long id){
+        return orderService.cancelOrder(id);
+    }
+
+    @PutMapping("/{id}/complete")
+    ResponseEntity<?> completeOrder(@PathVariable Long id){
+        return orderService.completeOrder(id);
     }
 }

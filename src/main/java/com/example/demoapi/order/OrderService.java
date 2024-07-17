@@ -5,7 +5,9 @@ import org.springframework.data.mongodb.core.aggregation.BooleanOperators;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.http.ResponseEntity;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.mediatype.problem.Problem;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -24,7 +26,7 @@ class OrderService {
         this.orderEntityModelAssembler = orderEntityModelAssembler;
     }
 
-     EntityModel<Order> getOrderById(Long id) {
+    EntityModel<Order> getOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
         return orderEntityModelAssembler.toModel(order);
     }
@@ -53,8 +55,37 @@ class OrderService {
         return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
     }
 
-    public void removeOrder(Long id) {
+    ResponseEntity<?> removeOrder(Long id) {
         orderRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    ResponseEntity<?> cancelOrder(Long id) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        if (order.getStatus() == Status.IN_PROGRESS) {
+            order.setStatus(Status.CANCELLED);
+            return ResponseEntity.ok(orderEntityModelAssembler.toModel(orderRepository.save(order)));
+        }
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail("You can't cancel an order that is in the " + order.getStatus() + " status"));
+    }
+
+    public ResponseEntity<?> completeOrder(Long id) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        if (order.getStatus() == Status.IN_PROGRESS) {
+            order.setStatus(Status.COMPLETED);
+            return ResponseEntity.ok(orderEntityModelAssembler.toModel(orderRepository.save(order)));
+        }
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail("You can't complete an order that is in the " + order.getStatus() + " status"));
     }
 }
 
