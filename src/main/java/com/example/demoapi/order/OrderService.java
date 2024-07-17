@@ -1,27 +1,35 @@
 package com.example.demoapi.order;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.aggregation.BooleanOperators;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
 class OrderService {
     private final OrderRepository orderRepository;
+    private final OrderEntityModelAssembler orderEntityModelAssembler;
 
     @Autowired
-    OrderService(OrderRepository orderRepository) {
+    OrderService(OrderRepository orderRepository, OrderEntityModelAssembler orderEntityModelAssembler) {
         this.orderRepository = orderRepository;
+        this.orderEntityModelAssembler = orderEntityModelAssembler;
     }
 
-    Order getOrderById(Long id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new OrderNotFoundException(id));
+     EntityModel<Order> getOrderById(Long id) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        return orderEntityModelAssembler.toModel(order);
     }
 
-    List<Order> getOrders() {
-        return orderRepository.findAll();
+    CollectionModel<EntityModel<Order>> getOrders() {
+        List<Order> orders = orderRepository.findAll();
+        return orderEntityModelAssembler.toCollectionModel(orders);
     }
 
     Order saveOrder(Order order) {

@@ -3,6 +3,8 @@ package com.example.demoapi.order;
 import jakarta.websocket.server.PathParam;
 import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,13 +22,13 @@ class OrderController {
         this.orderService = orderService;
     }
 
-    @GetMapping
-    List<Order> getOrders() {
+    @GetMapping()
+    CollectionModel<EntityModel<Order>> getOrders() {
         return orderService.getOrders();
     }
 
     @GetMapping("/{id}")
-    Order getOrderById(@PathVariable Long id) {
+    EntityModel<Order> getOrderById(@PathVariable Long id) {
         return orderService.getOrderById(id);
     }
 
