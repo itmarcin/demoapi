@@ -1,5 +1,6 @@
 package com.example.demoapi.order;
 
+import com.example.demoapi.logging.KafkaProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.aggregation.BooleanOperators;
 import org.springframework.hateoas.CollectionModel;
@@ -19,20 +20,26 @@ import java.util.stream.Collectors;
 class OrderService {
     private final OrderRepository orderRepository;
     private final OrderEntityModelAssembler orderEntityModelAssembler;
+    private final KafkaProducerService kafkaProducerService;
+//    private final KafkaProducerService kafkaProducerService;
 
     @Autowired
-    OrderService(OrderRepository orderRepository, OrderEntityModelAssembler orderEntityModelAssembler) {
+    OrderService(OrderRepository orderRepository, OrderEntityModelAssembler orderEntityModelAssembler, KafkaProducerService kafkaProducerService) {
         this.orderRepository = orderRepository;
         this.orderEntityModelAssembler = orderEntityModelAssembler;
+//        this.kafkaProducerService = kafkaProducerService;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     EntityModel<Order> getOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        kafkaProducerService.sendLog("Searching for users");
         return orderEntityModelAssembler.toModel(order);
     }
 
     CollectionModel<EntityModel<Order>> getOrders() {
         List<Order> orders = orderRepository.findAll();
+        kafkaProducerService.sendLog("Searching for users");
         return orderEntityModelAssembler.toCollectionModel(orders);
     }
 
