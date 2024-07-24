@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,69 +30,51 @@ class OrderService {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    EntityModel<Order> getOrderById(Long id) {
+    Order getOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
         kafkaProducerService.sendLog(String.format("Searching for the order: %d", order.getId()));
-        return orderEntityModelAssembler.toModel(order);
+        return order;
     }
 
-    CollectionModel<EntityModel<Order>> getOrders() {
+    Collection<Order> getOrders() {
         List<Order> orders = orderRepository.findAll();
         kafkaProducerService.sendLog("Searching for all orders");
-        return orderEntityModelAssembler.toCollectionModel(orders);
+        return orders;
     }
 
-    ResponseEntity<?> saveOrder(Order order) {
-        EntityModel<Order> entityModel = orderEntityModelAssembler.toModel(orderRepository.save(order));
-        kafkaProducerService.sendLog(String.format("Saving the new user: %s", Objects.requireNonNull(entityModel.getContent())));
-        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
+    Order saveOrder(Order order) {
+        Order savedOrder = orderRepository.save(order);
+        kafkaProducerService.sendLog(String.format("Saving the new user: %s", savedOrder.toString()));
+        return savedOrder;
     }
 
-    ResponseEntity<?> updateOrder(Order newOrder, Long id) {
-        Order updatedOrder = orderRepository.findById(id)
+    Order updateOrder(Order newOrder, Long id) {
+        return orderRepository.findById(id)
                 .map(order -> {
                     order.setDescription(newOrder.getDescription());
                     order.setStatus(newOrder.getStatus());
                     return orderRepository.save(order);
-                }).orElseGet(() -> {
-                    return orderRepository.save(newOrder);
-                });
-
-        EntityModel<Order> entityModel = orderEntityModelAssembler.toModel(updatedOrder);
-        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
+                }).orElseGet(() -> orderRepository.save(newOrder));
     }
 
-    ResponseEntity<?> removeOrder(Long id) {
+    void removeOrder(Long id) {
         orderRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
     }
 
-    ResponseEntity<?> cancelOrder(Long id) {
+    Order cancelOrder(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-        if (order.getStatus() == Status.IN_PROGRESS) {
-            order.setStatus(Status.CANCELLED);
-            return ResponseEntity.ok(orderEntityModelAssembler.toModel(orderRepository.save(order)));
-        }
-        return ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
-                .body(Problem.create()
-                        .withTitle("Method not allowed")
-                        .withDetail("You can't cancel an order that is in the " + order.getStatus() + " status"));
+        order.setStatus(Status.CANCELLED);
+        return orderRepository.save(order);
     }
 
-    public ResponseEntity<?> completeOrder(Long id) {
+    Order completeOrder(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-        if (order.getStatus() == Status.IN_PROGRESS) {
-            order.setStatus(Status.COMPLETED);
-            return ResponseEntity.ok(orderEntityModelAssembler.toModel(orderRepository.save(order)));
-        }
-        return ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
-                .body(Problem.create()
-                        .withTitle("Method not allowed")
-                        .withDetail("You can't complete an order that is in the " + order.getStatus() + " status"));
+        order.setStatus(Status.COMPLETED);
+        return orderRepository.save(order);
+    }
+
+    boolean isOrderInProgress(Long id) {
+        return this.getOrderById(id).isInProgress();
     }
 }
 

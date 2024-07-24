@@ -70,4 +70,8 @@ class Order {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public boolean isInProgress() {
+        return this.status.equals(Status.IN_PROGRESS);
+    }
 }
