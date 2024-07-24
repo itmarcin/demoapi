@@ -1,6 +1,6 @@
 package com.example.demoapi.order;
 
-import com.example.demoapi.logging.KafkaProducerService;
+import com.example.demoapi.logging.kafka.producer.KafkaProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Service
@@ -20,30 +21,29 @@ class OrderService {
     private final OrderRepository orderRepository;
     private final OrderEntityModelAssembler orderEntityModelAssembler;
     private final KafkaProducerService kafkaProducerService;
-//    private final KafkaProducerService kafkaProducerService;
 
     @Autowired
     OrderService(OrderRepository orderRepository, OrderEntityModelAssembler orderEntityModelAssembler, KafkaProducerService kafkaProducerService) {
         this.orderRepository = orderRepository;
         this.orderEntityModelAssembler = orderEntityModelAssembler;
-//        this.kafkaProducerService = kafkaProducerService;
         this.kafkaProducerService = kafkaProducerService;
     }
 
     EntityModel<Order> getOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-        kafkaProducerService.sendLog("Searching for users");
+        kafkaProducerService.sendLog(String.format("Searching for the order: %d", order.getId()));
         return orderEntityModelAssembler.toModel(order);
     }
 
     CollectionModel<EntityModel<Order>> getOrders() {
         List<Order> orders = orderRepository.findAll();
-        kafkaProducerService.sendLog("Searching for users");
+        kafkaProducerService.sendLog("Searching for all orders");
         return orderEntityModelAssembler.toCollectionModel(orders);
     }
 
     ResponseEntity<?> saveOrder(Order order) {
         EntityModel<Order> entityModel = orderEntityModelAssembler.toModel(orderRepository.save(order));
+        kafkaProducerService.sendLog(String.format("Saving the new user: %s", Objects.requireNonNull(entityModel.getContent())));
         return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
     }
 

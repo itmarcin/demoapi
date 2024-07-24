@@ -44,12 +44,12 @@ class OrderController {
     }
 
     @DeleteMapping("/{id}/cancel")
-    ResponseEntity<?> cancelOrder(@PathVariable Long id){
+    ResponseEntity<?> cancelOrder(@PathVariable Long id) {
         return orderService.cancelOrder(id);
     }
 
     @PutMapping("/{id}/complete")
-    ResponseEntity<?> completeOrder(@PathVariable Long id){
+    ResponseEntity<?> completeOrder(@PathVariable Long id) {
         return orderService.completeOrder(id);
     }
 }
