@@ -1,14 +1,9 @@
 package com.example.demoapi.order;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.aggregation.BooleanOperators;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.mediatype.problem.Problem;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +11,7 @@ import static com.example.demoapi.DemoapiApplication.API_VERSION;
 
 @RestController
 @RequestMapping(path = API_VERSION + "/orders")
-class OrderController {
+public class OrderController {
     private final OrderService orderService;
     private final OrderEntityModelAssembler orderEntityModelAssembler;
 

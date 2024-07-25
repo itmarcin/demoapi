@@ -1,5 +1,6 @@
 package com.example.demoapi.order;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -71,6 +72,7 @@ class Order {
         this.description = description;
     }
 
+    @JsonIgnore
     public boolean isInProgress() {
         return this.status.equals(Status.IN_PROGRESS);
     }
