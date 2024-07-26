@@ -43,6 +43,7 @@ public class OrderControllerTest {
     private Order mockOrderInProgress;
     private Order mockOrderCompleted;
     private Order updatedMockOrderInProgress;
+    private Order cancelledMockOrder;
     private static final MediaType HAL_JSON = new MediaType("application", "hal+json");
 
     @BeforeEach
@@ -52,6 +53,7 @@ public class OrderControllerTest {
         mockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
         mockOrderCompleted = new Order(2L, Status.COMPLETED, "Beans");
         updatedMockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Orange");
+        cancelledMockOrder = new Order(1L, Status.CANCELLED, "Meat");
         List<Order> mockOrders = List.of(mockOrderInProgress, mockOrderCompleted);
 
         // orderService methods
@@ -61,7 +63,7 @@ public class OrderControllerTest {
         when(orderService.saveOrder(mockOrderInProgress)).thenReturn(mockOrderInProgress);
         when(orderService.updateOrder(mockOrderInProgress, 2L)).thenReturn(mockOrderInProgress);
 
-        // Mocked HAL representation for mockOrder1
+        // Mocked HAL representation for mockOrderInProgress
         when(orderEntityModelAssembler.toModel(mockOrderInProgress))
                 .thenReturn(EntityModel.of(mockOrderInProgress)
                         .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderInProgress.getId())).withSelfRel())
@@ -69,8 +71,7 @@ public class OrderControllerTest {
                         .add(linkTo(methodOn(OrderController.class).cancelOrder(mockOrderInProgress.getId())).withRel("cancel"))
                         .add(linkTo(methodOn(OrderController.class).completeOrder(mockOrderInProgress.getId())).withRel("complete")));
 
-
-        // Mocked HAL representation for mockOrder2
+        // Mocked HAL representation for mockOrderCompleted
         when(orderEntityModelAssembler.toModel(mockOrderCompleted))
                 .thenReturn(EntityModel.of(mockOrderCompleted)
                         .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderCompleted.getId())).withSelfRel())
@@ -179,6 +180,43 @@ public class OrderControllerTest {
                         .delete("/" + API_VERSION + "/orders/1"))
                 .andDo(print())
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void givenOrderInProgress_whenCancel_thenReturnCancelledOrderWithLinks() throws Exception {
+        when(orderService.cancelOrder(1L)).thenReturn(cancelledMockOrder);
+        when(orderService.isOrderInProgress(1L)).thenReturn(true);
+
+        // Mocked HAL representation for cancelledMockOrder
+        when(orderEntityModelAssembler.toModel(cancelledMockOrder))
+                .thenReturn(EntityModel.of(cancelledMockOrder)
+                        .add(linkTo(methodOn(OrderController.class).getOrderById(cancelledMockOrder.getId())).withSelfRel())
+                        .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders")));
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/" + API_VERSION + "/orders/1/cancel")
+                        .accept(HAL_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").exists())
+                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(cancelledMockOrder.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
+                .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"));
+    }
+
+    @Test
+    public void givenOrderCompletedOrder_whenCancel_thenReturnMethodNotAllowed() throws Exception {
+        when(orderService.isOrderInProgress(2L)).thenReturn(false);
+        when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status")).thenCallRealMethod();
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/" + API_VERSION + "/orders/2/cancel")
+                        .accept(HAL_JSON))
+                .andDo(print())
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.detail").value("You can cancel only orders in the IN_PROGRESS status"));
     }
 
 
