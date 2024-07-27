@@ -45,59 +45,48 @@ public class OrderControllerTest {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
-    private Order mockOrderInProgress;
-    private Order mockOrderCompleted;
-    private Order updatedMockOrderInProgress;
-    private Order cancelledMockOrder;
     private static final MediaType HAL_JSON = new MediaType("application", "hal+json");
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
+    }
 
-        mockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
-        mockOrderCompleted = new Order(2L, Status.COMPLETED, "Beans");
-        updatedMockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Orange");
-        cancelledMockOrder = new Order(1L, Status.CANCELED, "Meat");
-        List<Order> mockOrders = List.of(mockOrderInProgress, mockOrderCompleted);
+    private EntityModel<Order> getMockedOrderEntityModel(Order order) {
+        EntityModel<Order> orderModel = EntityModel.of(order,
+                linkTo(methodOn(OrderController.class).getOrderById(order.getId())).withSelfRel(),
+                linkTo(methodOn(OrderController.class).getOrders()).withRel("orders"));
 
-        // orderService methods
-        when(orderService.getOrders()).thenReturn(mockOrders);
-        when(orderService.getOrderById(1L)).thenReturn(mockOrderInProgress);
-        when(orderService.getOrderById(2L)).thenReturn(mockOrderCompleted);
-        when(orderService.saveOrder(mockOrderInProgress)).thenReturn(mockOrderInProgress);
-        when(orderService.updateOrder(mockOrderInProgress, 2L)).thenReturn(mockOrderInProgress);
+        if (order.getStatus() == Status.IN_PROGRESS) {
+            orderModel.add(linkTo(methodOn(OrderController.class).cancelOrder(order.getId())).withRel("cancel"));
+            orderModel.add(linkTo(methodOn(OrderController.class).completeOrder(order.getId())).withRel("complete"));
+        }
+        return orderModel;
+    }
 
-        // Mocked HAL representation for mockOrderInProgress
-        when(orderEntityModelAssembler.toModel(mockOrderInProgress))
-                .thenReturn(EntityModel.of(mockOrderInProgress)
-                        .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderInProgress.getId())).withSelfRel())
-                        .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders"))
-                        .add(linkTo(methodOn(OrderController.class).cancelOrder(mockOrderInProgress.getId())).withRel("cancel"))
-                        .add(linkTo(methodOn(OrderController.class).completeOrder(mockOrderInProgress.getId())).withRel("complete")));
+    private CollectionModel<EntityModel<Order>> getMockedOrdersEntityModels(List<Order> orders) {
+        List<EntityModel<Order>> modelOrders = orders.stream().map(this::getMockedOrderEntityModel).toList();
+        return CollectionModel.of(modelOrders, linkTo(methodOn(OrderController.class).getOrders()).withSelfRel());
+    }
 
-        // Mocked HAL representation for mockOrderCompleted
-        when(orderEntityModelAssembler.toModel(mockOrderCompleted))
-                .thenReturn(EntityModel.of(mockOrderCompleted)
-                        .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderCompleted.getId())).withSelfRel())
-                        .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders")));
-
-        // Mocked HAL representation for collection of orders
-        when(orderEntityModelAssembler.toCollectionModel(mockOrders))
-                .thenReturn(CollectionModel.of(List.of(
-                        EntityModel.of(mockOrderInProgress)
-                                .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderInProgress.getId())).withSelfRel())
-                                .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders"))
-                                .add(linkTo(methodOn(OrderController.class).cancelOrder(mockOrderInProgress.getId())).withRel("cancel"))
-                                .add(linkTo(methodOn(OrderController.class).completeOrder(mockOrderInProgress.getId())).withRel("complete")),
-                        EntityModel.of(mockOrderCompleted)
-                                .add(linkTo(methodOn(OrderController.class).getOrderById(mockOrderCompleted.getId())).withSelfRel())
-                                .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders"))
-                )));
+    public ResponseEntity<?> getMockedMethodNotAllowedResponse(String message) {
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail(message));
     }
 
     @Test
     public void givenOrdersExist_whenGetOrders_thenReturnOrderListWithLinks() throws Exception {
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+        Order orderCompleted = new Order(2L, Status.COMPLETED, "Beans");
+        List<Order> mockOrders = List.of(orderInProgress, orderCompleted);
+
+        when(orderService.getOrders()).thenReturn(mockOrders);
+        when(orderEntityModelAssembler.toCollectionModel(mockOrders)).thenReturn(getMockedOrdersEntityModels(mockOrders));
+
         mockMvc.perform(MockMvcRequestBuilders
                         .get("/" + API_VERSION + "/orders")
                         .accept(HAL_JSON))
@@ -105,31 +94,36 @@ public class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.orderList").exists())
                 .andExpect(jsonPath("$._embedded.orderList[*].id").isNotEmpty())
-                .andExpect(jsonPath("$._embedded.orderList[0].id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$._embedded.orderList[0].status").value(mockOrderInProgress.getStatus().toString()))
-                .andExpect(jsonPath("$._embedded.orderList[0].description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$._embedded.orderList[0].id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$._embedded.orderList[0].status").value(orderInProgress.getStatus().toString()))
+                .andExpect(jsonPath("$._embedded.orderList[0].description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._embedded.orderList[0]._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._embedded.orderList[0]._links.orders.href").value("/" + API_VERSION + "/orders"))
                 .andExpect(jsonPath("$._embedded.orderList[0]._links.cancel.href").value("/" + API_VERSION + "/orders/1/cancel"))
                 .andExpect(jsonPath("$._embedded.orderList[0]._links.complete.href").value("/" + API_VERSION + "/orders/1/complete"))
-                .andExpect(jsonPath("$._embedded.orderList[1].id").value(mockOrderCompleted.getId()))
-                .andExpect(jsonPath("$._embedded.orderList[1].status").value(mockOrderCompleted.getStatus().toString()))
-                .andExpect(jsonPath("$._embedded.orderList[1].description").value(mockOrderCompleted.getDescription()))
+                .andExpect(jsonPath("$._embedded.orderList[1].id").value(orderCompleted.getId()))
+                .andExpect(jsonPath("$._embedded.orderList[1].status").value(orderCompleted.getStatus().toString()))
+                .andExpect(jsonPath("$._embedded.orderList[1].description").value(orderCompleted.getDescription()))
                 .andExpect(jsonPath("$._embedded.orderList[1]._links.self.href").value("/" + API_VERSION + "/orders/2"))
                 .andExpect(jsonPath("$._embedded.orderList[1]._links.orders.href").value("/" + API_VERSION + "/orders"));
     }
 
     @Test
     public void givenOrderExists_whenGetOrderById_thenReturnOrderWithLinks() throws Exception {
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+
+        when(orderService.getOrderById(orderInProgress.getId())).thenReturn(orderInProgress);
+        when(orderEntityModelAssembler.toModel(orderInProgress)).thenReturn(getMockedOrderEntityModel(orderInProgress));
+
         mockMvc.perform(MockMvcRequestBuilders
                         .get("/" + API_VERSION + "/orders/1")
                         .accept(HAL_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$.status").value(mockOrderInProgress.getStatus().toString()))
-                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$.id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(orderInProgress.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"))
                 .andExpect(jsonPath("$._links.cancel.href").value("/" + API_VERSION + "/orders/1/cancel"))
@@ -138,7 +132,12 @@ public class OrderControllerTest {
 
     @Test
     public void givenNewOrder_whenPostOrder_thenReturnSavedOrderWithLinks() throws Exception {
-        String jsonOrder = objectMapper.writeValueAsString(mockOrderInProgress);
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+
+        when(orderEntityModelAssembler.toModel(orderInProgress)).thenReturn(getMockedOrderEntityModel(orderInProgress));
+        when(orderService.saveOrder(orderInProgress)).thenReturn(orderInProgress);
+
+        String jsonOrder = objectMapper.writeValueAsString(orderInProgress);
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/" + API_VERSION + "/orders")
                         .contentType(HAL_JSON).content(jsonOrder)
@@ -148,9 +147,9 @@ public class OrderControllerTest {
                 .andExpect(header().exists("Location"))
                 .andExpect(header().string("Location", "/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$.status").value(mockOrderInProgress.getStatus().toString()))
-                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$.id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(orderInProgress.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"))
                 .andExpect(jsonPath("$._links.cancel.href").value("/" + API_VERSION + "/orders/1/cancel"))
@@ -159,9 +158,14 @@ public class OrderControllerTest {
 
     @Test
     public void givenOrderExists_whenPutOrderWithNewParameters_thenReturnUpdatedOrderWithLinks() throws Exception {
-        String jsonOrder = objectMapper.writeValueAsString(mockOrderInProgress);
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+
+        when(orderEntityModelAssembler.toModel(orderInProgress)).thenReturn(getMockedOrderEntityModel(orderInProgress));
+        when(orderService.updateOrder(orderInProgress, 2L)).thenReturn(orderInProgress);
+
+        String jsonOrder = objectMapper.writeValueAsString(orderInProgress);
         mockMvc.perform(MockMvcRequestBuilders
-                        .put(("/" + API_VERSION + "/orders/2"), mockOrderInProgress)
+                        .put(("/" + API_VERSION + "/orders/2"), orderInProgress)
                         .content(jsonOrder)
                         .contentType(HAL_JSON)
                         .accept(HAL_JSON))
@@ -170,9 +174,9 @@ public class OrderControllerTest {
                 .andExpect(header().exists("Location"))
                 .andExpect(header().string("Location", "/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$.status").value(mockOrderInProgress.getStatus().toString()))
-                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$.id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(orderInProgress.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"))
                 .andExpect(jsonPath("$._links.cancel.href").value("/" + API_VERSION + "/orders/1/cancel"))
@@ -189,14 +193,12 @@ public class OrderControllerTest {
 
     @Test
     public void givenOrderInProgress_whenCancel_thenReturnCancelledOrderWithLinks() throws Exception {
-        when(orderService.cancelOrder(1L)).thenReturn(cancelledMockOrder);
-        when(orderService.isOrderInProgress(1L)).thenReturn(true);
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+        Order orderCanceled = new Order(1L, Status.CANCELED, "Meat");
 
-        // Mocked HAL representation for cancelledMockOrder
-        when(orderEntityModelAssembler.toModel(cancelledMockOrder))
-                .thenReturn(EntityModel.of(cancelledMockOrder)
-                        .add(linkTo(methodOn(OrderController.class).getOrderById(cancelledMockOrder.getId())).withSelfRel())
-                        .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders")));
+        when(orderService.cancelOrder(1L)).thenReturn(orderCanceled);
+        when(orderService.isOrderInProgress(1L)).thenReturn(true);
+        when(orderEntityModelAssembler.toModel(orderCanceled)).thenReturn(getMockedOrderEntityModel(orderCanceled));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .delete("/" + API_VERSION + "/orders/1/cancel")
@@ -204,9 +206,9 @@ public class OrderControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$.status").value(cancelledMockOrder.getStatus().toString()))
-                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$.id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(orderCanceled.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"));
     }
@@ -215,14 +217,8 @@ public class OrderControllerTest {
     public void givenOrderCompletedOrder_whenCancel_thenReturnMethodNotAllowed() throws Exception {
         when(orderService.isOrderInProgress(2L)).thenReturn(false);
 
-        ResponseEntity<?> responseEntity = ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
-                .body(Problem.create()
-                        .withTitle("Method not allowed")
-                        .withDetail("You can cancel only orders in the IN_PROGRESS status"));
         when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"))
-                .thenAnswer(invocation -> responseEntity);
+                .thenAnswer(invocation -> getMockedMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .delete("/" + API_VERSION + "/orders/2/cancel")
@@ -235,14 +231,17 @@ public class OrderControllerTest {
 
     @Test
     public void givenOrderInProgress_whenComplete_thenReturnCompletedOrderWithLinks() throws Exception {
+        Order orderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
+        Order orderCompleted = new Order(1L, Status.COMPLETED, "Meat");
+
         when(orderService.isOrderInProgress(1L)).thenReturn(true);
-        Order completedMockedOrder = new Order(1L, Status.COMPLETED, "Meat");
-        when(orderService.completeOrder(1L)).thenReturn(completedMockedOrder);
+
+        when(orderService.completeOrder(1L)).thenReturn(orderCompleted);
 
         // Mocked HAL representation for cancelledMockOrder
-        when(orderEntityModelAssembler.toModel(completedMockedOrder))
-                .thenReturn(EntityModel.of(completedMockedOrder)
-                        .add(linkTo(methodOn(OrderController.class).getOrderById(completedMockedOrder.getId())).withSelfRel())
+        when(orderEntityModelAssembler.toModel(orderCompleted))
+                .thenReturn(EntityModel.of(orderCompleted)
+                        .add(linkTo(methodOn(OrderController.class).getOrderById(orderCompleted.getId())).withSelfRel())
                         .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders")));
 
         mockMvc.perform(MockMvcRequestBuilders
@@ -251,26 +250,20 @@ public class OrderControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
-                .andExpect(jsonPath("$.status").value(mockOrderCompleted.getStatus().toString()))
-                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$.id").value(orderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(orderCompleted.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(orderInProgress.getDescription()))
                 .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
                 .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"));
     }
 
     @Test
     public void givenOrderCanceled_whenComplete_thenReturnMethodNotAllowed() throws Exception {
-        Order canceledOrder = new Order(1L, Status.CANCELED, "Meat");
-        when(orderService.isOrderInProgress(canceledOrder.getId())).thenReturn(false);
+        Order orderCanceled = new Order(1L, Status.CANCELED, "Meat");
+        when(orderService.isOrderInProgress(orderCanceled.getId())).thenReturn(false);
 
-        ResponseEntity<?> responseEntity = ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
-                .body(Problem.create()
-                        .withTitle("Method not allowed")
-                        .withDetail("You can cancel only orders in the IN_PROGRESS status"));
         when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"))
-                .thenAnswer(invocation -> responseEntity);
+                .thenAnswer(invocation -> getMockedMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .delete("/" + API_VERSION + "/orders/1/cancel")
@@ -280,6 +273,5 @@ public class OrderControllerTest {
                 .andExpect(jsonPath("$.title").value("Method not allowed"))
                 .andExpect(jsonPath("$.detail").value("You can cancel only orders in the IN_PROGRESS status"));
     }
-
 
 }
