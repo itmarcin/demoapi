@@ -16,7 +16,7 @@ class DataLoader {
         return args -> {
             orderRepository.deleteAll(); // Clean up any existing data
             logger.info("Preloading " + orderRepository.save(new Order(1L, Status.IN_PROGRESS, "Meat")));
-            logger.info("Preloading " + orderRepository.save(new Order(2L, Status.CANCELLED, "Beans")));
+            logger.info("Preloading " + orderRepository.save(new Order(2L, Status.CANCELED, "Beans")));
             logger.info("Preloading " + orderRepository.save(new Order(3L, Status.COMPLETED, "Tacos")));
             logger.info("Preloading " + orderRepository.save(new Order(4L, Status.IN_PROGRESS, "Meat")));
         };

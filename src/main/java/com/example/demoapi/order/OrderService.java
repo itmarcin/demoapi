@@ -2,19 +2,10 @@ package com.example.demoapi.order;
 
 import com.example.demoapi.logging.kafka.producer.KafkaProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.mediatype.problem.Problem;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 
 @Service
@@ -63,7 +54,7 @@ class OrderService {
 
     Order cancelOrder(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-        order.setStatus(Status.CANCELLED);
+        order.setStatus(Status.CANCELED);
         return orderRepository.save(order);
     }
 

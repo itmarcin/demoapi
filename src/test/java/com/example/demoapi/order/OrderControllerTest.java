@@ -9,7 +9,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.mediatype.problem.Problem;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -53,7 +58,7 @@ public class OrderControllerTest {
         mockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Meat");
         mockOrderCompleted = new Order(2L, Status.COMPLETED, "Beans");
         updatedMockOrderInProgress = new Order(1L, Status.IN_PROGRESS, "Orange");
-        cancelledMockOrder = new Order(1L, Status.CANCELLED, "Meat");
+        cancelledMockOrder = new Order(1L, Status.CANCELED, "Meat");
         List<Order> mockOrders = List.of(mockOrderInProgress, mockOrderCompleted);
 
         // orderService methods
@@ -209,13 +214,70 @@ public class OrderControllerTest {
     @Test
     public void givenOrderCompletedOrder_whenCancel_thenReturnMethodNotAllowed() throws Exception {
         when(orderService.isOrderInProgress(2L)).thenReturn(false);
-        when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status")).thenCallRealMethod();
+
+        ResponseEntity<?> responseEntity = ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail("You can cancel only orders in the IN_PROGRESS status"));
+        when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"))
+                .thenAnswer(invocation -> responseEntity);
 
         mockMvc.perform(MockMvcRequestBuilders
                         .delete("/" + API_VERSION + "/orders/2/cancel")
                         .accept(HAL_JSON))
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.title").value("Method not allowed"))
+                .andExpect(jsonPath("$.detail").value("You can cancel only orders in the IN_PROGRESS status"));
+    }
+
+    @Test
+    public void givenOrderInProgress_whenComplete_thenReturnCompletedOrderWithLinks() throws Exception {
+        when(orderService.isOrderInProgress(1L)).thenReturn(true);
+        Order completedMockedOrder = new Order(1L, Status.COMPLETED, "Meat");
+        when(orderService.completeOrder(1L)).thenReturn(completedMockedOrder);
+
+        // Mocked HAL representation for cancelledMockOrder
+        when(orderEntityModelAssembler.toModel(completedMockedOrder))
+                .thenReturn(EntityModel.of(completedMockedOrder)
+                        .add(linkTo(methodOn(OrderController.class).getOrderById(completedMockedOrder.getId())).withSelfRel())
+                        .add(linkTo(methodOn(OrderController.class).getOrders()).withRel("orders")));
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .put("/" + API_VERSION + "/orders/1/complete")
+                        .accept(HAL_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").exists())
+                .andExpect(jsonPath("$.id").value(mockOrderInProgress.getId()))
+                .andExpect(jsonPath("$.status").value(mockOrderCompleted.getStatus().toString()))
+                .andExpect(jsonPath("$.description").value(mockOrderInProgress.getDescription()))
+                .andExpect(jsonPath("$._links.self.href").value("/" + API_VERSION + "/orders/1"))
+                .andExpect(jsonPath("$._links.orders.href").value("/" + API_VERSION + "/orders"));
+    }
+
+    @Test
+    public void givenOrderCanceled_whenComplete_thenReturnMethodNotAllowed() throws Exception {
+        Order canceledOrder = new Order(1L, Status.CANCELED, "Meat");
+        when(orderService.isOrderInProgress(canceledOrder.getId())).thenReturn(false);
+
+        ResponseEntity<?> responseEntity = ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail("You can cancel only orders in the IN_PROGRESS status"));
+        when(orderEntityModelAssembler.getMethodNotAllowedResponse("You can cancel only orders in the IN_PROGRESS status"))
+                .thenAnswer(invocation -> responseEntity);
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/" + API_VERSION + "/orders/1/cancel")
+                        .accept(HAL_JSON))
+                .andDo(print())
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.title").value("Method not allowed"))
                 .andExpect(jsonPath("$.detail").value("You can cancel only orders in the IN_PROGRESS status"));
     }
 
