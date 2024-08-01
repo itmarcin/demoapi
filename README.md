@@ -8,9 +8,22 @@
 <!-- GETTING STARTED -->
 ## Getting Started
 
+### Creating and pushing a new Docker image
 
+1. Create docker image from **demoapi** directory
+    ```sh
+    docker build -t x1023/demoapi:latest .
+    ```
+2. Verify image
+    ```sh
+    docker images
+   ``` 
+3. Push docker image
+    ```sh
+    docker push x1023/demoapi:latest
+   ```
 
-### Prerequisites
+### Kubernetes prerequisites
 
 When mongodb is run for the first time, a root user is created with **MONGO_INITDB_ROOT_USERNAME** and **MONGO_INITDB_ROOT_PASSWORD** variables. <br>
 They are stored in Kubernetes secrets. You need to create secret for root credentials.
