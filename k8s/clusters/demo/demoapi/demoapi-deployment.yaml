@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demoapi-deployment
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demoapi
+  template:
+    metadata:
+      labels:
+        app: demoapi
+    spec:
+      containers:
+        - name: demoapi
+          image: x1023/demoapi:latest
+          ports:
+            - containerPort: 8080
+            - containerPort: 9092
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo-service:27017/demoapi-database?authSource=admin"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-service.demo.svc.cluster.local:9092"
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-root-credentials
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-root-credentials
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

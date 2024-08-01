@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - demo/mongodb/mongo-deployment.yaml
+  - demo/mongodb/mongo-service.yaml
+  - demo/mongodb/mongo-pvc.yaml
+  - demo/kafka/kafka-deployment.yaml
+  - demo/kafka/kafka-service.yaml
+  - demo/kafka/kafka-pvc.yaml
+  - demo/demoapi/demoapi-deployment.yaml
+  - demo/demoapi/demoapi-service.yaml
