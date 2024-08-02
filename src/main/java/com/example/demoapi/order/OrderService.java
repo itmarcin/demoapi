@@ -7,17 +7,14 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.List;
 
-
 @Service
 class OrderService {
     private final OrderRepository orderRepository;
-    private final OrderEntityModelAssembler orderEntityModelAssembler;
     private final KafkaProducerService kafkaProducerService;
 
     @Autowired
-    OrderService(OrderRepository orderRepository, OrderEntityModelAssembler orderEntityModelAssembler, KafkaProducerService kafkaProducerService) {
+    OrderService(OrderRepository orderRepository, KafkaProducerService kafkaProducerService) {
         this.orderRepository = orderRepository;
-        this.orderEntityModelAssembler = orderEntityModelAssembler;
         this.kafkaProducerService = kafkaProducerService;
     }
 

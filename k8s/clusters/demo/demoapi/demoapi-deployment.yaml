@@ -34,6 +34,22 @@ spec:
                 secretKeyRef:
                   name: mongo-root-credentials
                   key: MONGO_INITDB_ROOT_PASSWORD
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: "128Mi"
