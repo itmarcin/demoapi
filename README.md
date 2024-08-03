@@ -54,6 +54,12 @@ They are stored in Kubernetes secrets. You need to create secret for root creden
     kubectl logs demoapi-deployment-756684f445-g2mxn -n demo
     ```   
 
+### GCP prerequisites
+1. Create variable with path to credentials for terraform service
+   ```sh
+    $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\terraform-sa-key.json"
+    ```   
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
