@@ -6,7 +6,6 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,15 +34,13 @@ public class HealthCheckController {
     public Health readiness() {
         Health.Builder healthBuilder = Health.up();
 
-        // Check MongoDB
-        try {
-            mongoTemplate.executeCommand("{ ping: 1 }");
-            healthBuilder.withDetail("MongoDB", "Available");
-        } catch (Exception e) {
-            healthBuilder.withDetail("MongoDB", "Not Available").down(e);
-        }
+        checkMongoDb(healthBuilder);
+        checkKafka(healthBuilder);
 
-        // Check Kafka
+        return healthBuilder.build();
+    }
+
+    private void checkKafka(Health.Builder healthBuilder) {
         Properties properties = new Properties();
         properties.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
         try (Admin adminClient = AdminClient.create(properties)) {
@@ -54,7 +51,14 @@ public class HealthCheckController {
         } catch (Exception e) {
             healthBuilder.withDetail("Kafka", "Not Available").down(e);
         }
+    }
 
-        return healthBuilder.build();
+    private void checkMongoDb(Health.Builder healthBuilder) {
+        try {
+            mongoTemplate.executeCommand("{ ping: 1 }");
+            healthBuilder.withDetail("MongoDB", "Available");
+        } catch (Exception e) {
+            healthBuilder.withDetail("MongoDB", "Not Available").down(e);
+        }
     }
 }

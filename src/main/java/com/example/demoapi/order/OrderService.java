@@ -20,19 +20,19 @@ class OrderService {
 
     Order getOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-        kafkaProducerService.sendLog(String.format("Searching for the order: %d", order.getId()));
+        kafkaProducerService.log(String.format("Searching for the order: %d", order.getId()));
         return order;
     }
 
     Collection<Order> getOrders() {
         List<Order> orders = orderRepository.findAll();
-        kafkaProducerService.sendLog("Searching for all orders");
+        kafkaProducerService.log("Searching for all orders");
         return orders;
     }
 
     Order saveOrder(Order order) {
         Order savedOrder = orderRepository.save(order);
-        kafkaProducerService.sendLog(String.format("Saving the new user: %s", savedOrder.toString()));
+        kafkaProducerService.log(String.format("Saving the new user: %s", savedOrder.toString()));
         return savedOrder;
     }
 
