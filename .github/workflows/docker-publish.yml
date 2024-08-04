@@ -11,10 +11,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v1
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
@@ -22,27 +22,29 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Determine image version
-      id: version
+    - name: Get latest Docker image tag
+      id: get-tag
       run: |
-        # Get the latest tag from the Docker Hub repository
-        LATEST_TAG=$(docker manifest inspect x1023/demoapi | jq -r '.manifests[].platform.version' | sort -V | tail -n 1)
-        
+        # Fetch the latest tags from Docker Hub
+        LATEST_TAG=$(curl -s https://hub.docker.com/v2/repositories/x1023/demoapi/tags/?page_size=100 | jq -r '.results[].name' | sort -V | tail -n 1)
+
         # If no tags found, start from 0.0.1
         if [ -z "$LATEST_TAG" ]; then
           VERSION="0.0.1"
         else
           # Increment the patch version
-          VERSION=$(echo "$LATEST_TAG" | awk -F. -v OFS=. '{$NF++;print}')
+          IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+          PATCH=${VERSION_PARTS[2]}
+          PATCH=$((PATCH + 1))
+          VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
         fi
 
         echo "Version: $VERSION"
         echo "::set-output name=image_version::$VERSION"
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v2
       with:
         context: .
         push: true
-        tags: x1023/demoapi:${{ steps.version.outputs.image_version }}
-
+        tags: x1023/demoapi:${{ steps.get-tag.outputs.image_version }}
