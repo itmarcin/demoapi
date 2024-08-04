@@ -12,6 +12,5 @@ spec:
   sourceRef:
     kind: GitRepository
     name: demoapi-repo
-  targetNamespace: demo
   timeout: 1m0s
   wait: true
