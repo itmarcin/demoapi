@@ -1,7 +1,7 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
-  name: podinfo
+  name: demoapi-image-policy
   namespace: flux-system
 spec:
   imageRepositoryRef:
