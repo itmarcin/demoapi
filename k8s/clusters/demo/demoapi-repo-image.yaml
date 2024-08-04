@@ -1,0 +1,8 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: demoapi-repo-image
+  namespace: flux-system
+spec:
+  image: docker.io/x1023/demoapi
+  interval: 1m
