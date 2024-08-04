@@ -1,4 +1,4 @@
-name: Build and Push Docker image
+name: Build and Push Docker Image
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,15 +16,33 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Login to DockerHub
+    - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}  # DockerHub access token here
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push
+    - name: Determine image version
+      id: version
+      run: |
+        # Get the latest tag from the Docker Hub repository
+        LATEST_TAG=$(docker manifest inspect x1023/demoapi | jq -r '.manifests[].platform.version' | sort -V | tail -n 1)
+        
+        # If no tags found, start from 0.0.1
+        if [ -z "$LATEST_TAG" ]; then
+          VERSION="0.0.1"
+        else
+          # Increment the patch version
+          VERSION=$(echo "$LATEST_TAG" | awk -F. -v OFS=. '{$NF++;print}')
+        fi
+
+        echo "Version: $VERSION"
+        echo "::set-output name=image_version::$VERSION"
+
+    - name: Build and push Docker image
       uses: docker/build-push-action@v3
       with:
         context: .
         push: true
-        tags: x1023/demoapi:latest
+        tags: x1023/demoapi:${{ steps.version.outputs.image_version }}
+
