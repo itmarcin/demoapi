@@ -13,21 +13,35 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Check commit message
+      id: check_commit
+      run: |
+        # Get the latest commit message
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        # Check if the commit message contains the specified substring
+        if echo "$COMMIT_MESSAGE" | grep -q 'Image version automatically updated'; then
+          echo "COMMIT_CONTAINS_UPDATE=true" >> $GITHUB_ENV
+        else
+          echo "COMMIT_CONTAINS_UPDATE=false" >> $GITHUB_ENV
+        fi
+
     - name: Set up Docker Buildx
+      if: env.COMMIT_CONTAINS_UPDATE == 'false'
       uses: docker/setup-buildx-action@v1
 
     - name: Log in to Docker Hub
+      if: env.COMMIT_CONTAINS_UPDATE == 'false'
       uses: docker/login-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Get latest Docker image tag
+      if: env.COMMIT_CONTAINS_UPDATE == 'false'
       id: get-tag
       run: |
         # Fetch the latest tags from Docker Hub
         LATEST_TAG=$(curl -s https://hub.docker.com/v2/repositories/x1023/demoapi/tags/?page_size=100 | jq -r '.results[].name' | sort -V | tail -n 1)
-
         # If no tags found, start from 0.0.1
         if [ -z "$LATEST_TAG" ]; then
           VERSION="0.0.1"
@@ -38,11 +52,11 @@ jobs:
           PATCH=$((PATCH + 1))
           VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
         fi
-
         echo "Version: $VERSION"
         echo "::set-output name=image_version::$VERSION"
 
     - name: Build and push Docker image
+      if: env.COMMIT_CONTAINS_UPDATE == 'false'
       uses: docker/build-push-action@v2
       with:
         context: .
