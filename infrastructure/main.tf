@@ -6,10 +6,9 @@ provider "google" {
 }
 
 resource "google_compute_instance" "k8s_main" {
-  name         = "k8s-master"
+  name         = "k8s-main"
   machine_type = "e2-medium"
   zone         = "europe-central2-c"
-#   region  = "europe-central2"
 
   boot_disk {
     initialize_params {
@@ -19,7 +18,6 @@ resource "google_compute_instance" "k8s_main" {
 
   network_interface {
     network    = google_compute_network.custom_network.name
-#     subnetwork = google_compute_subnetwork.default.name
     access_config {}
   }
 
@@ -32,6 +30,4 @@ resource "google_compute_instance" "k8s_main" {
     curl -sfL https://get.k3s.io | sh -
     kubectl taint nodes --all node-role.kubernetes.io/master-
   EOF
-
-  tags = ["http-server"]
 }

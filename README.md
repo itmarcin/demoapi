@@ -54,11 +54,38 @@ They are stored in Kubernetes secrets. You need to create secret for root creden
     kubectl logs demoapi-deployment-756684f445-g2mxn -n demo
     ```   
 
-### GCP prerequisites
+### GCP connection form Windows prerequisites
 1. Create variable with path to credentials for terraform service
    ```sh
     $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\terraform-sa-key.json"
-    ```   
+    ```
+2. Install Flux
+   ```sh
+    curl -s https://fluxcd.io/install.sh | sudo bash
+    ```
+
+### GCP set up the VM
+1. Install k3s
+   ```sh
+    curl -sfL https://get.k3s.io | sh -
+    ```
+2. After running the installation script, check if the k3s service is running:
+   ```sh
+    sudo systemctl status k3s
+    ```
+3. Ensure the kubeconfig file is in place and accessible. By default, K3s places the kubeconfig file at /etc/rancher/k3s/k3s.yaml.
+You should copy this file to the default kubeconfig location or set the KUBECONFIG environment variable.
+   ```sh
+   mkdir -p $HOME/.kube
+   sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
+   sudo chown $(id -u):$(id -g) $HOME/.kube/config
+   export KUBECONFIG=$HOME/.kube/config
+   ```
+4. Install Flux
+   ```sh
+    curl -s https://fluxcd.io/install.sh | sudo bash
+    ```
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
