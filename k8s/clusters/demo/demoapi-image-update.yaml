@@ -19,6 +19,3 @@ spec:
       messageTemplate: 'Image version automatically updated: {{range .Changed.Changes}}{{print .OldValue}} -> {{println .NewValue}}{{end}}'
     push:
       branch: main
-  update:
-    path: ./clusters/my-cluster
-    strategy: Setters
