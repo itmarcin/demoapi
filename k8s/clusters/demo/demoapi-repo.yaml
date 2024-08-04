@@ -9,3 +9,5 @@ spec:
   ref:
     branch: main
   url: https://github.com/itmarcin/demoapi
+  secretRef:
+    flux-git-auth
