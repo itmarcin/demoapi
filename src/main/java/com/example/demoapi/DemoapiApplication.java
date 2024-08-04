@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DemoapiApplication {
 
 	public static final String API_VERSION = "api/v1";
+	public String testGithubWorkflow = "remove-me-later";
 
 	public static void main(String[] args) {
 		SpringApplication.run(DemoapiApplication.class, args);
