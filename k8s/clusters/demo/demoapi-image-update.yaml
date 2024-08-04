@@ -15,8 +15,8 @@ spec:
     commit:
       author:
         email: marcinlewandowski1999@gmail.com
-        name: itmarcin
-      messageTemplate: '{{range .Changed.Changes}}{{print .OldValue}} -> {{println .NewValue}}{{end}}'
+        name: Marcin Lewandowski
+      messageTemplate: 'Image version automatically updated: {{range .Changed.Changes}}{{print .OldValue}} -> {{println .NewValue}}{{end}}'
     push:
       branch: main
   update:
