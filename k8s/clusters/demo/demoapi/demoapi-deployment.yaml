@@ -37,7 +37,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /api/v1/health/liveness
-              port: 30007
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -45,7 +45,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /api/v1/health/readiness
-              port: 30007
+              port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 5
