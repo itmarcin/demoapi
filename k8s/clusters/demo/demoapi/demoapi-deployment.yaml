@@ -38,7 +38,7 @@ spec:
             httpGet:
               path: /api/v1/health/liveness
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 45
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
@@ -46,7 +46,7 @@ spec:
             httpGet:
               path: /api/v1/health/readiness
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
