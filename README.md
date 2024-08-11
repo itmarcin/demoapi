@@ -34,7 +34,7 @@ They are stored in Kubernetes secrets. You need to create secret for root creden
     --from-literal=MONGO_INITDB_ROOT_USERNAME=<root_username> \
     --from-literal=MONGO_INITDB_ROOT_PASSWORD=<root_password>
     ```
-2. Run Kustomization from **demoapi\k8s\clusters** directory
+2. Run Kustomization from **demoapi\k8s\clusters\demo** directory
     ```sh
     kubectl kustomize . | kubectl apply -f -
    ```    
@@ -59,12 +59,8 @@ They are stored in Kubernetes secrets. You need to create secret for root creden
    ```sh
     $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\terraform-sa-key.json"
     ```
-2. Install Flux
-   ```sh
-    curl -s https://fluxcd.io/install.sh | sudo bash
-    ```
 
-### GCP set up the VM
+### GCP set up the new VM (new Kubernetes cluster)
 1. Install k3s
    ```sh
     curl -sfL https://get.k3s.io | sh -
@@ -85,6 +81,33 @@ You should copy this file to the default kubeconfig location or set the KUBECONF
    ```sh
     curl -s https://fluxcd.io/install.sh | sudo bash
     ```
+5. Create repo directory for repository in home directory
+   ```sh
+    mkdir ~/repo
+    ```
+6. Pull repository (use GitHub PAT)
+   ```sh
+    cd ~/repo && git clone https://github.com/itmarcin/demoapi.git
+    ```
+7. Create demo namespace
+   ```sh
+    cd ~/repo/demoapi/k8s/clusters/demo && kubectl apply -f demo-namespace.yaml
+    ```
+8. Create demo namespace
+   ```sh
+   kubectl create namespace flux-system
+    ```
+9. Create Kubernetes secret for mongodb credentials, replace **<root_password>** and **<root_username>** with proper values.
+    ```sh
+    kubectl create secret generic mongo-root-credentials --namespace demo --from-literal=MONGO_INITDB_ROOT_USERNAME=<root_username> --from-literal=MONGO_INITDB_ROOT_PASSWORD=<root_password>
+10. Create Kubernetes secret for GitHub PAT used by flux for automatic demoapi version commits.
+    ```sh
+    kubectl create secret generic flux-git-auth --namespace=flux-system --from-literal=username=itmarcin --from-literal=password=<gcp-demoapi-flux-admin>
+     ``` 
+11. Bootstrap repository - use PAT in gcp-demoapi-flux-admin
+    ```sh
+     echo "gcp-demoapi-flux-admin" | flux bootstrap github --token-auth --owner=itmarcin --repository=demoapi --branch=main --path=./k8s/clusters/demo --components=source-controller,kustomize-controller,helm-controller,image-reflector-controller,image-automation-controller --personal
+     ```
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
