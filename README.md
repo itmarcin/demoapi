@@ -4,6 +4,13 @@
   <p align="center">
     Simple project for learning few new technologies
 
+<!-- ABOUT PROJECT -->
+## About Project
+### Project prequisitues
+* use [Flux](https://fluxcd.io/) for deployment and maintenance of simple application
+* simple aplication - rest api (basic CURD methods)
+* use Mongodb/PostgreSQL or Kafka (you also can use both)
+* deploy everything on Google Cloud Platform
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -24,6 +31,9 @@
    ```
 
 ### Kubernetes prerequisites
+
+**For locally testing I used [docker desktop](https://www.docker.com/products/docker-desktop/) <br>
+Install it first following [installation guide](https://docs.docker.com/desktop/install/windows-install/) - this is for windows but you can change system using left toolbar.** 
 
 When mongodb is run for the first time, a root user is created with **MONGO_INITDB_ROOT_USERNAME** and **MONGO_INITDB_ROOT_PASSWORD** variables. <br>
 They are stored in Kubernetes secrets. You need to create secret for root credentials.
@@ -110,7 +120,6 @@ You should copy this file to the default kubeconfig location or set the KUBECONF
      ```
 
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
