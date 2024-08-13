@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: demoapi
-          image: docker.io/x1023/demoapi:0.0.15 # {"$imagepolicy": "flux-system:demoapi-image-policy"}
+          image: docker.io/x1023/demoapi:0.0.16 # {"$imagepolicy": "flux-system:demoapi-image-policy"}
           ports:
             - containerPort: 8080
             - containerPort: 9092
