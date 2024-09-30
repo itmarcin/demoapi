@@ -4,7 +4,7 @@ metadata:
   name: demoapi-service
   namespace: demo
 spec:
-#  type: NodePort
+  type: NodePort
   selector:
     app: demoapi
   ports:
