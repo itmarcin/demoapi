@@ -18,8 +18,8 @@ I wanted to use technologies gradually to see for myself what benefits they prov
 This path was not the most efficient, but I think I learned more this way.
 
 ### Project final version
-*  Above prerequisites has been fulfilled
-*  Additionally I expanded functionallity above the prerequisites. Flux has been set up to automatically update changes in deployment (Kubernetes) but also version of the application. Basically when you are making a commit to the source code github action will build docker image of the application and store it in docker repository. Flux is listening to docker repository and when it will get a new application version it will be deployed automatically
+*  Above prerequisites have been fulfilled.
+*  Additionally I expanded functionallity above the prerequisites. Flux has been set up to automatically update changes in deployment (Kubernetes) but also version of the application. Basically when you are making a commit to the source code github action will build docker image of the application and store it in docker repository. Flux is listening to docker repository and when it will get a new application version it will be deployed automatically.
 *  I have not used GKE (Google Kubernetes Engine) intentionally. I wanted to set up Kubernetes on my own on GCE (Google Compute Engine - virtual machines). I think it was a fun challenge. Due to cost and simple installation I used k3s (light version of Kubernetes). Not using GKE has made it difficult to implement Ingres. Instead I implemented application as NodePort.
 *  **The project currently does not exist on GCP due to costs.**
 
