@@ -7,17 +7,21 @@
 <!-- ABOUT PROJECT -->
 ## About Project
 ### Project prerequisites
-* use [Flux](https://fluxcd.io/) for deployment and maintenance of simple application
-* simple aplication - rest api (basic CRUD methods) using Java Spring
-* use Mongodb/PostgreSQL or Kafka (you also can use both)
-* deploy everything on Google Cloud Platform
-* you have one month to complete the project
+* Use [Flux](https://fluxcd.io/) for deployment and maintenance of simple application.
+* Simple aplication - rest api (basic CRUD methods) using Java Spring.
+* Use Mongodb/PostgreSQL or Kafka (you also can use both).
+* Deploy everything on Google Cloud Platform.
+* You have one month to complete the project.
+
+### My approach to the project
+I wanted to use technologies gradually to see for myself what benefits they provide. It was: Java Spring application with database in memory -> Add locally installed Mongodb -> Add locally installed Kafka (I failed to configure it properlly on Windows even with WSL) -> Use docker for application -> Use docker for Mongodb and Kafka -> Use Kubernetes locally -> Move everything on GCP using Terraform -> Configure Flux bootstrap -> Add improvements above prerequisites.
+This path was not the most efficient, but I think I learned more this way.
 
 ### Project final version
 *  Above prerequisites has been fulfilled
 *  Additionally I expanded functionallity above the prerequisites. Flux has been set up to automatically update changes in deployment (Kubernetes) but also version of the application. Basically when you are making a commit to the source code github action will build docker image of the application and store it in docker repository. Flux is listening to docker repository and when it will get a new application version it will be deployed automatically
 *  I have not used GKE (Google Kubernetes Engine) intentionally. I wanted to set up Kubernetes on my own on GCE (Google Compute Engine - virtual machines). I think it was a fun challenge. Due to cost and simple installation I used k3s (light version of Kubernetes). Not using GKE has made it difficult to implement Ingres. Instead I implemented application as NodePort.
-*  The project currently does not exist on GCP due to costs.
+*  **The project currently does not exist on GCP due to costs.**
 
 <!-- GETTING STARTED -->
 ## Cheat sheet for project owner
