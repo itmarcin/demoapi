@@ -8,7 +8,7 @@
 ## About Project
 ### Project prequisitues
 * use [Flux](https://fluxcd.io/) for deployment and maintenance of simple application
-* simple aplication - rest api (basic CURD methods)
+* simple aplication - rest api (basic CRUD methods)
 * use Mongodb/PostgreSQL or Kafka (you also can use both)
 * deploy everything on Google Cloud Platform
 
